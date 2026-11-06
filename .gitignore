@@ -34,3 +34,9 @@ __pycache__/
 /scripts/install-devices.sh
 /scripts/collect-install-logs.py
 /scripts/watch-symbol-progress.command
+
+# Exports saved into the project by mistake
+REP-backup*.json
+REP-preserved-original*.json
+training-v1.json*
+sets.csv

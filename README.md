@@ -6,6 +6,8 @@ A native SwiftUI strength-training app for Apple Watch, with an iPhone companion
 
 ## First time installing an app? Start here
 
+**[Want an AI assistant to handle setup? Copy this installation prompt](AI_INSTALL.md).** Open the downloaded REP folder in an assistant with command access to your Mac, then paste the prompt. It can use the included installer to build and install directly on your phone and Watch, pausing for your Apple sign-in, device prompts, and Bluetooth checks. A chat without access to your Mac can guide the steps but cannot perform the installation.
+
 **[Open the beginner guide: put REP on your iPhone and Apple Watch](docs/INSTALL.md).** Start at step 1, even if you have never downloaded Xcode or connected your phone to a computer. No coding, Terminal commands, Claude, or other AI tools are needed for the main walkthrough.
 
 You need a **Mac**, an **iPhone**, its **paired Apple Watch**, a **USB cable that connects your phone to your Mac and transfers data**, and your own **Apple Account** (the account you use for the App Store). The guide covers:

@@ -2,6 +2,8 @@
 
 This guide starts from zero. You do not need to know how to code, use Terminal, or use Claude or any other AI tool. Follow the steps in order. **Settings → Bluetooth** means “open Settings, then choose Bluetooth.”
 
+**Prefer an assistant to do the computer work? [Copy the AI installation prompt](../AI_INSTALL.md).** It includes a portable direct-to-device installer and all the connection workarounds below. The assistant needs command access to your local Mac; you still handle Apple sign-in and device confirmations. Otherwise, continue with this manual walkthrough.
+
 REP is not in the App Store. You download its files, then use Apple's free Mac app **Xcode** to turn those files into an app and put it on your devices. Xcode calls that **building and running**.
 
 **Before you begin:** Apple's free installation permission expires **7 days after issuance**. REP may stop opening until you install it again through Xcode. Keep the downloaded project and your personal settings. [Apple explains Personal Team limits here](https://developer.apple.com/help/account/basics/about-your-developer-account).

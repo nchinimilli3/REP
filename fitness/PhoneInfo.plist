@@ -1,0 +1,16 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE plist PUBLIC "-//Apple//DTD PLIST 1.0//EN" "http://www.apple.com/DTDs/PropertyList-1.0.dtd">
+<plist version="1.0">
+<dict>
+	<key>NSBonjourServices</key>
+	<array>
+		<string>_repbackup._tcp</string>
+	</array>
+	<key>NSHealthShareUsageDescription</key>
+	<string>REP. displays available strength and Indoor Walking workout summaries, Activity rings and today’s total steps beside your lifting log.</string>
+	<key>NSHealthUpdateUsageDescription</key>
+	<string>REP. removes an accidentally recorded workout from Apple Health only when you choose Delete Workout and confirm.</string>
+	<key>NSLocalNetworkUsageDescription</key>
+	<string>REP. sends encrypted workout logs to your paired laptop on your local Wi-Fi.</string>
+</dict>
+</plist>

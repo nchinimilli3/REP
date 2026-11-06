@@ -1,0 +1,9 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE plist PUBLIC "-//Apple//DTD PLIST 1.0//EN" "http://www.apple.com/DTDs/PropertyList-1.0.dtd">
+<plist version="1.0"><dict>
+<key>WKApplication</key><true/>
+<key>WKCompanionAppBundleIdentifier</key><string>nehachinimilli.fitness</string>
+<key>WKBackgroundModes</key><array><string>workout-processing</string></array>
+<key>NSHealthShareUsageDescription</key><string>REP. reads your workout heart rate, active energy and available Activity summary, and checks saved workout records.</string>
+<key>NSHealthUpdateUsageDescription</key><string>REP. saves the real strength workouts you record on this Watch to Apple Health.</string>
+</dict></plist>

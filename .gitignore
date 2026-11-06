@@ -1,0 +1,36 @@
+# macOS / Xcode / generated output
+.DS_Store
+DerivedData/
+*.xcuserstate
+xcuserdata/
+.build/
+build/
+__pycache__/
+*.pyc
+
+# Private runtime data, backups, credentials and signing material
+/data/
+/laptop/data/
+**/pairing-key
+*.mobileprovision
+*.provisionprofile
+*.p12
+*.p8
+*.pem
+.env
+.env.*
+*.local.xcconfig
+
+# Personal planning, device receipts, screenshots and local tooling.
+# Keep these on this Mac; publish only the maintained public docs below.
+/AGENTS.md
+/docs/*
+!/docs/INSTALL.md
+!/docs/DEVELOPMENT.md
+/evidence/
+/design/
+/tools/
+/*.png
+/scripts/install-devices.sh
+/scripts/collect-install-logs.py
+/scripts/watch-symbol-progress.command

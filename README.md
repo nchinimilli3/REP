@@ -4,11 +4,22 @@ Less tapping. More lifting.
 
 A native SwiftUI strength-training app for Apple Watch, with an iPhone companion. Log sets with one tap, edit loads and reps, use rest timers, and review progress. The Watch records a real indoor Traditional Strength Training workout in Apple Health.
 
-## Install your own build
+## First time installing an app? Start here
 
-You need a Mac with Xcode, an Apple Account, an iPhone running iOS 17 or later, and a paired Apple Watch running watchOS 10.6 or later. This project is currently developed with Xcode 26.3. There are no third-party package dependencies.
+**[Open the beginner guide: put REP on your iPhone and Apple Watch](docs/INSTALL.md).** Start at step 1, even if you have never downloaded Xcode or connected your phone to a computer. No coding, Terminal commands, Claude, or other AI tools are needed for the main walkthrough.
 
-**[Follow the Xcode installation guide](docs/INSTALL.md).** Downloading this repository gives you source code; each person signs and installs their own build.
+You need a **Mac**, an **iPhone**, its **paired Apple Watch**, a **USB cable that connects your phone to your Mac and transfers data**, and your own **Apple Account** (the account you use for the App Store). The guide covers:
+
+1. Downloading Xcode and REP, then opening the right file.
+2. Plugging in and trusting your phone, and enabling Developer Mode on both devices.
+3. Setting up your own Apple signing account with clearly listed fields.
+4. Installing and opening REP on your phone, then directly on your Watch.
+5. Fixing the connection and Watch installation problems encountered with this project.
+6. Checking both apps without the cable and renewing a free installation later.
+
+**Known wired-install workaround:** if the phone installation stalls, leave the iPhone plugged into the Mac, turn **iPhone Bluetooth OFF in Settings**, and leave **Mac and Watch Bluetooth ON**. This is a workaround reported by the app's author. The guide gives the sequence, including turning iPhone Bluetooth back on for Watch setup and sync.
+
+**Read before installing:** REP is installed from source using Xcode; there is no App Store download. Apple's free Personal Team profiles expire **7 days after issuance**, so you will need to install again through Xcode periodically. [Apple explains the free-account limits here](https://developer.apple.com/help/account/basics/about-your-developer-account). Your Mac/Xcode version must support your devices' software; the project is developed with Xcode 26.3, with app minimums of iOS 17 and watchOS 10.6. Signing and Health permissions must work with your own account and devices.
 
 ## Make it yours
 

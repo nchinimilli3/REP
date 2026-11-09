@@ -18,7 +18,7 @@ struct ContentView: View {
     @State private var swipeStartPage: Int?
     @State private var horizontalDrag: CGFloat = 0
     @State private var swipeIsHorizontal = false
-    @State private var workoutPagerMounted = true
+    @State private var swipeIsSettling = false
     @State private var swipeSettlingRevision = 0
     @State private var savedSetFeedback = false
     @State private var savedSetRecord: StrengthSession?
@@ -156,7 +156,7 @@ struct ContentView: View {
             horizontalDrag = 0
             swipeIsHorizontal = false
             swipeStartPage = nil
-            workoutPagerMounted = sidePage == 1
+            swipeIsSettling = false
             swipeSettlingRevision += 1
         }
     }
@@ -220,54 +220,15 @@ struct ContentView: View {
         // Only the vertical pager owns native page/Crown focus. Nesting it in
         // another TabView lets the outer pager consume its gestures and Crown.
         GeometryReader { geometry in
-            HStack(spacing: 0) {
-                controlsPage(record)
-                    .frame(width: geometry.size.width, height: geometry.size.height)
-                    .allowsHitTesting(sidePage == 0 && !swipeIsHorizontal)
-                    .accessibilityHidden(sidePage != 0)
-                Group {
-                    // The native page index is hosted outside the tab's frame.
-                    // Retain it through the slide; remove only after Controls settles.
-                    if workoutPagerMounted {
-                        TabView(selection: $page) {
-                            exercisePage(record).tag(0)
-                            metricsPage.tag(1)
-                            activityPage.tag(2)
-                        }
-                        .tabViewStyle(.verticalPage(transitionStyle: .identity))
-                        .transition(.identity)
-                    } else {
-                        Color.clear
-                    }
-                }
-                .frame(width: geometry.size.width, height: geometry.size.height)
-                .allowsHitTesting(sidePage == 1 && !swipeIsHorizontal && !Self.isControlsPreview)
-                .accessibilityHidden(sidePage != 1 || Self.isControlsPreview)
-            }
-            .frame(width: geometry.size.width * 2, height: geometry.size.height, alignment: .leading)
-            .offset(x: (sidePage == 0 ? 0 : -geometry.size.width) + horizontalDrag)
-            .simultaneousGesture(workoutSwipe(width: geometry.size.width))
+            workoutStrip(record, size: geometry.size)
+                .contentShape(Rectangle())
+                .simultaneousGesture(workoutSwipe(width: geometry.size.width))
         }
         .ignoresSafeArea(edges: .bottom)
         .contentShape(Rectangle())
         .toolbar(.hidden, for: .navigationBar)
         .background(.black)
         .onAppear { if Self.isControlsPreview { sidePage = 0 } }
-        .task(id: "\(sidePage)-\(swipeSettlingRevision)") {
-            if sidePage == 1 {
-                workoutPagerMounted = true
-            } else {
-                guard !swipeIsHorizontal else { return }
-                // Removing a native pager during the offset animation drops the
-                // outgoing page and can crossfade its replacement. Wait until settled.
-                do { try await Task.sleep(for: .milliseconds(260)) }
-                catch { return }
-                guard sidePage == 0, !swipeIsHorizontal else { return }
-                var transaction = Transaction()
-                transaction.disablesAnimations = true
-                withTransaction(transaction) { workoutPagerMounted = false }
-            }
-        }
         .task(id: record.restUntil) {
             guard let deadline = record.restUntil else { return }
             let remaining = max(0, deadline.timeIntervalSinceNow)
@@ -282,42 +243,89 @@ struct ContentView: View {
             } catch is CancellationError {} catch { records.errorMessage = error.localizedDescription }
         }
     }
+    private var swipeIsInFlight: Bool { swipeIsHorizontal || swipeIsSettling }
+
+    private func workoutStrip(_ record: StrengthSession, size: CGSize) -> some View {
+        let offset = (sidePage == 0 ? 0 : -size.width) + horizontalDrag
+        return HStack(spacing: 0) {
+            controlsPage(record)
+                .frame(width: size.width, height: size.height)
+                // Animate the strip's position without animating individual controls.
+                .transaction { $0.animation = nil }
+                .compositingGroup()
+                .allowsHitTesting(sidePage == 0 && !swipeIsInFlight)
+                .accessibilityHidden(sidePage != 0)
+            workoutSurface(record)
+                .transition(.identity)
+                .frame(width: size.width, height: size.height)
+                .allowsHitTesting(sidePage == 1 && !swipeIsInFlight && !Self.isControlsPreview)
+                .accessibilityHidden(sidePage != 1 || Self.isControlsPreview)
+        }
+        .frame(width: size.width * 2, height: size.height, alignment: .leading)
+        .offset(x: offset)
+        .frame(width: size.width, height: size.height, alignment: .leading)
+    }
+
+    @ViewBuilder private func workoutSurface(_ record: StrengthSession) -> some View {
+        // The native pager hosts its page index outside its frame.
+        // Slide only the selected content so that layer can't trail it.
+        if swipeIsInFlight {
+            workoutPage(record)
+        } else if sidePage == 1 {
+            TabView(selection: $page) {
+                exercisePage(record).tag(0)
+                metricsPage.tag(1)
+                activityPage.tag(2)
+            }
+            .tabViewStyle(.verticalPage(transitionStyle: .identity))
+        } else {
+            Color.clear
+        }
+    }
+
+    @ViewBuilder private func workoutPage(_ record: StrengthSession) -> some View {
+        switch page {
+        case 1: metricsPage
+        case 2: activityPage
+        default: exercisePage(record)
+        }
+    }
     // Explicit touch paging leaves the native vertical pager as Crown owner.
     private func workoutSwipe(width: CGFloat) -> some Gesture {
         DragGesture(minimumDistance: 16)
             .onChanged { value in
-                guard !Self.isControlsPreview else { return }
+                guard !Self.isControlsPreview, !swipeIsSettling else { return }
                 if swipeStartPage == nil { swipeStartPage = page }
                 let dx = value.translation.width
                 let dy = value.translation.height
                 if !swipeIsHorizontal, abs(dx) > abs(dy) * 1.5 {
+                    page = swipeStartPage ?? page
                     swipeIsHorizontal = true
-                    swipeSettlingRevision += 1
-                    // Prepare the incoming logger while the finger is still down.
-                    // Identity transition prevents a separate fade during the slide.
-                    workoutPagerMounted = true
                 }
                 guard swipeIsHorizontal, !reduceMotion, !dimmed else { return }
                 horizontalDrag = sidePage == 0 ? max(-width, min(0, dx)) : min(width, max(0, dx))
             }
             .onEnded { value in
-                let initialPage = swipeStartPage ?? page
-                let wasHorizontal = swipeIsHorizontal
+                guard !Self.isControlsPreview, !swipeIsSettling, let initialPage = swipeStartPage else { return }
                 swipeStartPage = nil
-                swipeIsHorizontal = false
-                guard !Self.isControlsPreview else { return }
                 let dx = value.translation.width
                 let dy = value.translation.height
-                withAnimation(reduceMotion || dimmed ? nil : .easeOut(duration: 0.22)) {
-                    horizontalDrag = 0
-                    if wasHorizontal {
+                if swipeIsHorizontal {
+                    swipeIsSettling = true
+                    swipeIsHorizontal = false
+                    swipeSettlingRevision += 1
+                    let revision = swipeSettlingRevision
+                    withAnimation(reduceMotion || dimmed ? nil : .easeOut(duration: 0.16), completionCriteria: .removed) {
+                        horizontalDrag = 0
                         if abs(dx) >= 28 { sidePage = dx > 0 ? 0 : 1 }
-                    } else if sidePage == 1, abs(dy) >= 28, abs(dy) > abs(dx) * 1.5 {
+                    } completion: {
+                        if swipeSettlingRevision == revision { swipeIsSettling = false }
+                    }
+                } else if sidePage == 1, abs(dy) >= 28, abs(dy) > abs(dx) * 1.5 {
+                    withAnimation(reduceMotion || dimmed ? nil : .easeOut(duration: 0.22)) {
                         page = min(2, max(0, initialPage + (dy < 0 ? 1 : -1)))
                     }
                 }
-                // Restart the cancellable settle task even for a canceled peek.
-                swipeSettlingRevision += 1
             }
     }
     private func exercisePage(_ record: StrengthSession) -> some View {
@@ -354,7 +362,9 @@ struct ContentView: View {
                         .buttonStyle(.borderedProminent).foregroundStyle(.black)
                     Button { confirmEdit { try records.rest(record.id, extend: true) } } label: { Image(systemName: "plus") }
                         .frame(width: 48).accessibilityLabel("Add 30 seconds")
-                }.tint(workoutAccent)
+                }
+                .tint(workoutAccent)
+                .padding(.bottom, 4)
             } else if let exercise = record.currentExercise {
                 ViewThatFits(in: .vertical) {
                     setEntryLayout(record, exercise: exercise, compact: false)
@@ -362,7 +372,7 @@ struct ContentView: View {
                 }
             } else if record.needsFinisherChoice {
                 HStack(spacing: 6) {
-                    AbsInvitationFigure(isVisible: page == 0 && sidePage == 1 && !swipeIsHorizontal)
+                    AbsInvitationFigure(isVisible: page == 0 && sidePage == 1 && !swipeIsInFlight)
                     Text("Add Abs?").font(.headline)
                 }
                 Spacer(minLength: 4)
@@ -388,7 +398,7 @@ struct ContentView: View {
         VStack(alignment: .leading, spacing: 0) {
             HStack(alignment: .center, spacing: REPStyle.compact) {
                 LiftingFigure(split: exercise.id == "abs" ? nil : exercise.split ?? .back,
-                              isMoving: workout.active && !workout.paused && !workout.busy && page == 0 && sidePage == 1 && !swipeIsHorizontal,
+                              isMoving: workout.active && !workout.paused && !workout.busy && page == 0 && sidePage == 1 && !swipeIsInFlight,
                               color: workoutAccent)
                     .frame(width: compact ? 24 : 28, height: compact ? 24 : 28)
                 VStack(alignment: .leading, spacing: 2) {
@@ -536,7 +546,7 @@ struct ContentView: View {
                 }
                 LiveWorkoutMetric(value: workout.calories.map { "\(Int($0))" } ?? "—", label: "ACTIVE\nCAL", accessibilityName: "Active calories", color: .white)
                 TimelineView(.periodic(from: .now, by: 1)) { context in
-                    LiveWorkoutMetric(value: workout.liveHeartRate(at: context.date).map { "\(Int($0))" } ?? "—", label: nil, accessibilityName: "Heart rate in beats per minute", color: .white, showsHeart: true, heartRate: workout.heartRate, heartIsVisible: page == 1 && sidePage == 1 && !swipeIsHorizontal)
+                    LiveWorkoutMetric(value: workout.liveHeartRate(at: context.date).map { "\(Int($0))" } ?? "—", label: nil, accessibilityName: "Heart rate in beats per minute", color: .white, showsHeart: true, heartRate: workout.heartRate, heartIsVisible: page == 1 && sidePage == 1 && !swipeIsInFlight)
                 }
             }.padding(.horizontal, 6).padding(.vertical, 2)
                 .frame(maxWidth: .infinity, maxHeight: .infinity, alignment: .leading)
@@ -650,7 +660,7 @@ struct ContentView: View {
             .frame(maxWidth: .infinity, maxHeight: .infinity, alignment: .top)
             }
         }
-        .ignoresSafeArea()
+        .ignoresSafeArea(.container, edges: .vertical)
     }
     private func summary(_ record: StrengthSession) -> some View {
         ScrollView {
@@ -754,6 +764,7 @@ struct WatchNumberEditor: View {
     @State private var load: TrainingLoad
     @State private var reps: Int
     @State private var value: Double
+    @State private var crownLoad: Double
     @State private var saveError: String?
     @FocusState private var focused: Bool
     @Environment(\.dismiss) private var dismiss
@@ -761,8 +772,18 @@ struct WatchNumberEditor: View {
         self.mode = mode; self.tint = tint; self.save = save
         _load = State(initialValue: load); _reps = State(initialValue: reps)
         _value = State(initialValue: mode == .reps ? Double(reps) : load.pounds ?? 0)
+        _crownLoad = State(initialValue: ((load.pounds ?? 0) / 5).rounded() * 5)
     }
     private var step: Double { mode == .reps ? 1 : 0.5 }
+    private var maximumValue: Double { mode == .reps ? 100 : 1000 }
+    private var crownValue: Binding<Double> {
+        if mode == .reps { return $value }
+        // Apply the Crown's movement relative to the exact load, including fractions.
+        return Binding(get: { crownLoad }, set: { detent in
+            value = min(maximumValue, max(0, value + (detent - crownLoad)))
+            crownLoad = detent
+        })
+    }
     private var acceptsValue: Bool {
         mode == .reps || (load.kind != .unknown && load.kind != .bodyweight)
     }
@@ -834,7 +855,11 @@ struct WatchNumberEditor: View {
         .padding(.bottom, REPStyle.detail)
     }
     private func valueControls(compact: Bool) -> some View {
-        HStack(alignment: .center, spacing: 0) {
+        let crownStep: Double = mode == .reps ? 1 : 5
+        let crownMinimum: Double = mode == .reps ? 0 : -crownStep
+        let crownMaximum = maximumValue - crownMinimum
+        let crownSensitivity: DigitalCrownRotationalSensitivity = mode == .reps ? .low : .medium
+        return HStack(alignment: .center, spacing: 0) {
             adjustmentButton(increasing: false)
             Text(value.repNumber)
                 .font(.system(size: compact ? 36 : 42, weight: .medium, design: .rounded).monospacedDigit())
@@ -842,8 +867,9 @@ struct WatchNumberEditor: View {
                 .lineLimit(1).minimumScaleFactor(0.5)
                 .frame(maxWidth: .infinity, minHeight: compact ? 44 : 54)
                 .focusable().focused($focused)
-                .digitalCrownRotation(detent: $value, from: 0, through: mode == .reps ? 100 : 1000,
-                                      by: step, sensitivity: .low,
+                // One extra detent at each end lets fractional loads reach the bounds.
+                .digitalCrownRotation(detent: crownValue, from: crownMinimum, through: crownMaximum,
+                                      by: crownStep, sensitivity: crownSensitivity,
                                       isContinuous: false, isHapticFeedbackEnabled: true)
                 .accessibilityLabel(mode == .reps ? "Repetitions" : "Pounds, \(load.kind.title)")
             adjustmentButton(increasing: true)
@@ -851,8 +877,8 @@ struct WatchNumberEditor: View {
     }
     private func adjustmentButton(increasing: Bool) -> some View {
         Button {
-            if increasing { value = min(mode == .reps ? 100 : 1000, value + step) }
-            else { value = max(0, value - step) }
+            value = min(maximumValue, max(0, value + (increasing ? step : -step)))
+            if mode == .load { crownLoad = (value / 5).rounded() * 5 }
         } label: {
             Image(systemName: increasing ? "plus" : "minus")
                 .font(.system(size: 16, weight: .semibold))

@@ -4,6 +4,14 @@ Less tapping. More lifting.
 
 A native SwiftUI strength-training app for Apple Watch, with an iPhone companion. Log sets with one tap, edit loads and reps, use rest timers, and review progress. The Watch records a real indoor Traditional Strength Training workout in Apple Health.
 
+## See REP in action
+
+| Choose a routine on Watch | Log a set on Watch | Review a workout on iPhone |
+| :---: | :---: | :---: |
+| <a href="media/watch-routine-picker.png"><img src="media/watch-routine-picker.png" alt="REP routine picker on Apple Watch with Glutes selected" width="176"></a> | <a href="media/watch-set-logger.png"><img src="media/watch-set-logger.png" alt="Apple Watch set logger showing 35 lb, 10 reps, and the Set Done button" width="176"></a> | <a href="media/iphone-workout-history.png"><img src="media/iphone-workout-history.png" alt="Sample Glutes workout on iPhone showing totals and individual sets" width="176"></a> |
+
+*Simulator screenshots with sample workout data.*
+
 ## First time installing an app? Start here
 
 **[Want an AI assistant to handle setup? Copy this installation prompt](AI_INSTALL.md).** Open the downloaded REP folder in an assistant with command access to your Mac, then paste the prompt. It can use the included installer to build and install directly on your phone and Watch, pausing for your Apple sign-in, device prompts, and Bluetooth checks. A chat without access to your Mac can guide the steps but cannot perform the installation.
